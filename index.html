@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>넬슨스포츠 판매 현황</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    background: linear-gradient(135deg, #0a0a12 0%, #12121f 50%, #0d0d1a 100%);
+    color: #e8e8f0;
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } = Recharts;
+
+const RAW_STORES = [
+  { name: "넬슨온라인", type: "온라인비즈", channel: "5.이커머스", sales: 87910072, qty: 424, profit: 80797890, stock: 0, planned: 422, costSales: 7112182 },
+  { name: "더기어샵 북한산성", type: "직영점", channel: "1.직영점", sales: 35399411, qty: 153, profit: 32921244, stock: 10368, planned: 10521, costSales: 2478167 },
+  { name: "더기어샵 일산점", type: "직영점", channel: "1.직영점", sales: 23906229, qty: 100, profit: 23480866, stock: 6563, planned: 6663, costSales: 425363 },
+  { name: "더기어샵 성수", type: "직영점", channel: "1.직영점", sales: 17874086, qty: 97, profit: 15907633, stock: 8523, planned: 8620, costSales: 1966453 },
+  { name: "코토팍시 더현대서울", type: "백화점", channel: "3.백화점", sales: 14092318, qty: 229, profit: 8838546, stock: 3123, planned: 3352, costSales: 5253772 },
+  { name: "더기어샵 대구", type: "백화점", channel: "3.백화점", sales: 11222726, qty: 39, profit: 10294590, stock: 3973, planned: 4012, costSales: 928136 },
+  { name: "더기어샵 광주수완", type: "아울렛", channel: "4.아울렛", sales: 11020227, qty: 45, profit: 10379227, stock: 7385, planned: 7430, costSales: 641000 },
+  { name: "더기어샵 청량리", type: "백화점", channel: "3.백화점", sales: 9881819, qty: 35, profit: 9881819, stock: 4026, planned: 4061, costSales: 0 },
+  { name: "코토팍시 롯데잠실", type: "백화점", channel: "3.백화점", sales: 8879908, qty: 166, profit: 5647999, stock: 3127, planned: 3293, costSales: 3231909 },
+  { name: "네이버스카르파", type: "온라인비즈", channel: "5.이커머스", sales: 2631003, qty: 15, profit: 1136003, stock: 0, planned: 15, costSales: 1495000 },
+  { name: "더기어샵 김해", type: "아울렛", channel: "4.아울렛", sales: 1333090, qty: 13, profit: 344317, stock: 3761, planned: 3774, costSales: 988773 },
+  { name: "더기어샵 기흥", type: "아울렛", channel: "4.아울렛", sales: 1192001, qty: 9, profit: 401183, stock: 5703, planned: 5712, costSales: 790818 },
+  { name: "무신사온라인", type: "온라인비즈", channel: "5.이커머스", sales: 950046, qty: 6, profit: 546410, stock: 0, planned: 6, costSales: 403636 },
+  { name: "네이버 코토팍시", type: "온라인비즈", channel: "5.이커머스", sales: 861820, qty: 6, profit: 561184, stock: 0, planned: 6, costSales: 300636 },
+  { name: "스카르파 부산본점", type: "백화점", channel: "3.백화점", sales: 677954, qty: 3, profit: 347863, stock: 1698, planned: 1701, costSales: 330091 },
+];
+
+const RAW_BRANDS = [
+  { name: "아크테릭스", sales: 192649507, profit: 181631570, qty: 685, stock: 44654, planned: 21574 },
+  { name: "코토팍시", sales: 26688273, profit: 16895684, qty: 408, stock: 16458, planned: 16200 },
+  { name: "스카르파", sales: 4679138, profit: 2127866, qty: 22, stock: 3905, planned: 7269 },
+  { name: "블랙다이아몬드", sales: 3354064, profit: 781337, qty: 34, stock: 6684, planned: 7226 },
+  { name: "매드락", sales: 720635, profit: 325698, qty: 23, stock: 1305, planned: 1328 },
+  { name: "빅아그네스", sales: 487001, profit: 98819, qty: 6, stock: 1391, planned: 1411 },
+  { name: "더기어샵", sales: 163727, profit: 61727, qty: 5, stock: 2696, planned: 2905 },
+  { name: "카르마", sales: 89091, profit: 52045, qty: 1, stock: 181, planned: 209 },
+];
+
+const STORE_BRAND_CROSS = {
+  "넬슨온라인": [
+    { brand: "아크테릭스", sales: 85369190 },
+    { brand: "블랙다이아몬드", sales: 1301609 },
+    { brand: "빅아그네스", sales: 434637 },
+    { brand: "스카르파", sales: 412818 },
+    { brand: "코토팍시", sales: 166136 },
+  ],
+  "더기어샵 북한산성": [{ brand: "아크테릭스", sales: 35399411 }],
+  "더기어샵 일산점": [{ brand: "아크테릭스", sales: 23787047 }, { brand: "더기어샵", sales: 119182 }],
+  "더기어샵 성수": [
+    { brand: "아크테릭스", sales: 16016587 },
+    { brand: "코토팍시", sales: 1247591 },
+    { brand: "스카르파", sales: 425454 },
+    { brand: "카르마", sales: 89091 },
+  ],
+  "코토팍시 더현대서울": [{ brand: "코토팍시", sales: 14092318 }],
+  "더기어샵 대구": [{ brand: "아크테릭스", sales: 11222726 }],
+  "더기어샵 광주수완": [{ brand: "아크테릭스", sales: 10207500 }, { brand: "더기어샵", sales: 812727 }],
+  "더기어샵 청량리": [{ brand: "아크테릭스", sales: 9881819 }],
+  "코토팍시 롯데잠실": [{ brand: "코토팍시", sales: 8879908 }],
+};
+
+const BRAND_COLORS = {
+  "아크테릭스": "#1a1a2e", "코토팍시": "#e94560", "스카르파": "#0f3460",
+  "블랙다이아몬드": "#533483", "매드락": "#e07c24", "빅아그네스": "#16697a",
+  "더기어샵": "#489fb5", "카르마": "#82b74b", "사은품 및 소모품": "#aaa",
+};
+
+const TYPE_COLORS = { "직영점": "#1a1a2e", "온라인비즈": "#e94560", "백화점": "#0f3460", "아울렛": "#e07c24" };
+
+const fmt = (n) => {
+  if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(1) + "억";
+  if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(0) + "만";
+  return n.toLocaleString();
+};
+const fmtFull = (n) => n.toLocaleString() + "원";
+const pct = (a, b) => (b !== 0 ? ((a / b) * 100).toFixed(1) : "0.0");
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return React.createElement("div", {
+    style: {
+      background: "rgba(20,20,30,0.95)", border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#e0e0e0",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.4)", backdropFilter: "blur(12px)"
+    }
+  },
+    React.createElement("div", { style: { fontWeight: 700, marginBottom: 4, color: "#fff", fontSize: 13 } }, label),
+    payload.map((p, i) => React.createElement("div", {
+      key: i, style: { display: "flex", justifyContent: "space-between", gap: 16, marginTop: 2 }
+    },
+      React.createElement("span", { style: { color: p.color } }, p.name),
+      React.createElement("span", { style: { fontWeight: 600 } }, fmtFull(p.value))
+    ))
+  );
+};
+
+function SalesDashboard() {
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [channelFilter, setChannelFilter] = useState("전체");
+  const [view, setView] = useState("sales");
+
+  const channels = ["전체", "직영점", "온라인비즈", "백화점", "아울렛"];
+
+  const filteredStores = useMemo(() => {
+    if (channelFilter === "전체") return RAW_STORES;
+    return RAW_STORES.filter(s => s.type === channelFilter);
+  }, [channelFilter]);
+
+  const totals = useMemo(() => ({
+    sales: filteredStores.reduce((a, b) => a + b.sales, 0),
+    qty: filteredStores.reduce((a, b) => a + b.qty, 0),
+    profit: filteredStores.reduce((a, b) => a + b.profit, 0),
+    stock: filteredStores.reduce((a, b) => a + b.stock, 0),
+  }), [filteredStores]);
+
+  const storeChartData = useMemo(() =>
+    filteredStores.map(s => ({
+      name: s.name.length > 8 ? s.name.slice(0, 7) + "…" : s.name,
+      fullName: s.name, 판매액: s.sales, 이익: s.profit, type: s.type,
+    })), [filteredStores]);
+
+  const brandPieData = useMemo(() =>
+    RAW_BRANDS.filter(b => b.sales > 0).map(b => ({
+      name: b.name, value: b.sales, fill: BRAND_COLORS[b.name] || "#666",
+    })), []);
+
+  const selectedDetail = selectedStore ? RAW_STORES.find(s => s.name === selectedStore) : null;
+  const selectedBrands = selectedStore && STORE_BRAND_CROSS[selectedStore] ? STORE_BRAND_CROSS[selectedStore] : [];
+
+  return (
+    <div style={{ padding: "24px 20px", maxWidth: 900, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+          <h1 style={{
+            fontSize: 22, fontWeight: 800, margin: 0,
+            background: "linear-gradient(90deg, #fff 0%, #a0a0c0 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: -0.5,
+          }}>판매 현황 대시보드</h1>
+          <span style={{
+            fontSize: 11, color: "#666", fontWeight: 500,
+            background: "rgba(255,255,255,0.05)", padding: "3px 10px", borderRadius: 20,
+          }}>FIT 기간분석</span>
+        </div>
+        <p style={{ fontSize: 12, color: "#555", margin: 0, marginTop: 4 }}>넬슨스포츠 · 매장 관리자용</p>
+      </div>
+
+      {/* Channel Filter */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+        {channels.map(ch => (
+          <button key={ch} onClick={() => { setChannelFilter(ch); setSelectedStore(null); }}
+            style={{
+              padding: "6px 16px", borderRadius: 20, border: "1px solid",
+              borderColor: channelFilter === ch ? "rgba(233,69,96,0.6)" : "rgba(255,255,255,0.08)",
+              background: channelFilter === ch ? "linear-gradient(135deg, rgba(233,69,96,0.2), rgba(233,69,96,0.05))" : "rgba(255,255,255,0.03)",
+              color: channelFilter === ch ? "#e94560" : "#888",
+              fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+            }}>{ch}</button>
+        ))}
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 24 }}>
+        {[
+          { label: "총 판매액", value: fmt(totals.sales), sub: "VAT 제외", accent: "#e94560" },
+          { label: "판매 수량", value: totals.qty.toLocaleString() + "개", sub: `${filteredStores.length}개 매장`, accent: "#489fb5" },
+          { label: "매출이익", value: fmt(totals.profit), sub: `이익률 ${pct(totals.profit, totals.sales)}%`, accent: "#82b74b" },
+          { label: "잔여 재고", value: fmt(totals.stock), sub: "현재 기준", accent: "#e07c24" },
+        ].map((kpi, i) => (
+          <div key={i} style={{
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 12, padding: "16px 14px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: kpi.accent, borderRadius: "12px 0 0 12px" }} />
+            <div style={{ fontSize: 10, color: "#666", fontWeight: 600, letterSpacing: 0.5, marginBottom: 6 }}>{kpi.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: -0.5 }}>{kpi.value}</div>
+            <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* View Toggle */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+        {[
+          { key: "sales", label: "매장별 판매" },
+          { key: "brand", label: "브랜드 비중" },
+          { key: "inventory", label: "재고/소진율" },
+        ].map(v => (
+          <button key={v.key} onClick={() => setView(v.key)}
+            style={{
+              padding: "7px 18px", borderRadius: 8, border: "none",
+              background: view === v.key ? "rgba(233,69,96,0.15)" : "transparent",
+              color: view === v.key ? "#e94560" : "#666",
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+            }}>{v.label}</button>
+        ))}
+      </div>
+
+      {/* Chart Area */}
+      <div style={{
+        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: 14, padding: "20px 12px 12px", marginBottom: 20,
+      }}>
+        {view === "sales" && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ccc", marginBottom: 14, paddingLeft: 8 }}>매장별 판매액 · 매출이익</div>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={storeChartData} margin={{ top: 0, right: 8, left: -10, bottom: 40 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#666" }} angle={-35} textAnchor="end" interval={0} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: "#555" }} tickFormatter={v => fmt(v)} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="판매액" radius={[4, 4, 0, 0]} onClick={(d) => setSelectedStore(d.fullName)}>
+                  {storeChartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fullName === selectedStore ? "#e94560" : (TYPE_COLORS[entry.type] || "#444")} style={{ cursor: "pointer", opacity: entry.fullName === selectedStore ? 1 : 0.7 }} />
+                  ))}
+                </Bar>
+                <Bar dataKey="이익" radius={[4, 4, 0, 0]} opacity={0.3}>
+                  {storeChartData.map((entry, i) => (<Cell key={i} fill={TYPE_COLORS[entry.type] || "#444"} />))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 4, flexWrap: "wrap" }}>
+              {Object.entries(TYPE_COLORS).map(([k, v]) => (
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "#777" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: v }} />{k}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view === "brand" && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ccc", marginBottom: 14, paddingLeft: 8 }}>브랜드별 매출 비중</div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie data={brandPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={2} stroke="none">
+                  {brandPieData.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend verticalAlign="bottom" iconType="circle" iconSize={8}
+                  formatter={(value) => React.createElement("span", { style: { color: "#888", fontSize: 10 } }, value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {view === "inventory" && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ccc", marginBottom: 14, paddingLeft: 8 }}>브랜드별 재고 현황 · 소진율</div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                    {["브랜드", "기획수량", "판매수량", "재고수량", "소진율"].map(h => (
+                      <th key={h} style={{ padding: "8px 10px", textAlign: h === "브랜드" ? "left" : "right", color: "#666", fontWeight: 600, fontSize: 10 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {RAW_BRANDS.map((b, i) => {
+                    const sellThrough = b.planned > 0 ? (b.qty / b.planned * 100) : 0;
+                    return (
+                      <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                        <td style={{ padding: "10px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND_COLORS[b.name] || "#666" }} />
+                          <span style={{ fontWeight: 600 }}>{b.name}</span>
+                        </td>
+                        <td style={{ padding: "10px", textAlign: "right", color: "#888" }}>{b.planned.toLocaleString()}</td>
+                        <td style={{ padding: "10px", textAlign: "right", color: "#ccc", fontWeight: 600 }}>{b.qty.toLocaleString()}</td>
+                        <td style={{ padding: "10px", textAlign: "right", color: "#888" }}>{b.stock.toLocaleString()}</td>
+                        <td style={{ padding: "10px", textAlign: "right" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+                            <div style={{ width: 60, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ width: `${Math.min(sellThrough, 100)}%`, height: "100%", background: sellThrough > 50 ? "#82b74b" : sellThrough > 10 ? "#e07c24" : "#e94560", borderRadius: 2 }} />
+                            </div>
+                            <span style={{ fontWeight: 700, fontSize: 11, minWidth: 40, textAlign: "right", color: sellThrough > 50 ? "#82b74b" : sellThrough > 10 ? "#e07c24" : "#e94560" }}>
+                              {sellThrough.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Store Detail Panel */}
+      {selectedDetail && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(233,69,96,0.05), rgba(233,69,96,0.01))",
+          border: "1px solid rgba(233,69,96,0.15)", borderRadius: 14, padding: 20, marginBottom: 20,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{selectedDetail.name}</div>
+              <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{selectedDetail.type} · {selectedDetail.channel}</div>
+            </div>
+            <button onClick={() => setSelectedStore(null)}
+              style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, color: "#888", padding: "4px 12px", cursor: "pointer", fontSize: 11 }}>닫기</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
+            {[
+              { label: "판매액", value: fmtFull(selectedDetail.sales), color: "#e94560" },
+              { label: "이익률", value: pct(selectedDetail.profit, selectedDetail.sales) + "%", color: "#82b74b" },
+              { label: "소진율", value: pct(selectedDetail.qty, selectedDetail.planned) + "%", color: "#489fb5" },
+            ].map((m, i) => (
+              <div key={i} style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: 9, color: "#666", marginBottom: 4, fontWeight: 600 }}>{m.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: m.color }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+          {selectedBrands.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 8 }}>브랜드별 매출 구성</div>
+              {selectedBrands.map((b, i) => {
+                const ratio = selectedDetail.sales > 0 ? (b.sales / selectedDetail.sales * 100) : 0;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND_COLORS[b.brand] || "#666", flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, color: "#ccc", width: 80, flexShrink: 0 }}>{b.brand}</span>
+                    <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ width: `${ratio}%`, height: "100%", background: BRAND_COLORS[b.brand] || "#666", borderRadius: 3 }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: "#888", width: 60, textAlign: "right", flexShrink: 0 }}>{fmt(b.sales)}</span>
+                    <span style={{ fontSize: 10, color: "#555", width: 40, textAlign: "right", flexShrink: 0 }}>{ratio.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Store Ranking Table */}
+      <div style={{
+        background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: 14, padding: "16px 0", overflow: "hidden",
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#ccc", marginBottom: 12, paddingLeft: 16 }}>매장 순위</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                {["#", "매장명", "유형", "판매액", "수량", "이익률", "소진율"].map(h => (
+                  <th key={h} style={{
+                    padding: "8px 10px", textAlign: ["#", "매장명", "유형"].includes(h) ? "left" : "right",
+                    color: "#555", fontWeight: 600, fontSize: 10, whiteSpace: "nowrap",
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredStores.map((s, i) => {
+                const margin = s.sales > 0 ? (s.profit / s.sales * 100) : 0;
+                const sellThrough = s.planned > 0 ? (s.qty / s.planned * 100) : 0;
+                const isSelected = s.name === selectedStore;
+                return (
+                  <tr key={i} onClick={() => setSelectedStore(s.name === selectedStore ? null : s.name)}
+                    style={{
+                      borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer",
+                      background: isSelected ? "rgba(233,69,96,0.08)" : "transparent", transition: "background 0.15s",
+                    }}>
+                    <td style={{ padding: "10px", color: "#555", fontWeight: 700, width: 30 }}>{i + 1}</td>
+                    <td style={{ padding: "10px", fontWeight: 700, color: isSelected ? "#e94560" : "#ddd" }}>{s.name}</td>
+                    <td style={{ padding: "10px" }}>
+                      <span style={{
+                        fontSize: 9, padding: "2px 8px", borderRadius: 10,
+                        background: `${TYPE_COLORS[s.type]}22`, color: TYPE_COLORS[s.type], fontWeight: 600,
+                      }}>{s.type}</span>
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right", fontWeight: 700, color: "#ccc" }}>{fmt(s.sales)}</td>
+                    <td style={{ padding: "10px", textAlign: "right", color: "#888" }}>{s.qty}</td>
+                    <td style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: margin > 80 ? "#82b74b" : margin > 50 ? "#e07c24" : "#e94560" }}>{margin.toFixed(1)}%</td>
+                    <td style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: sellThrough > 50 ? "#82b74b" : sellThrough > 10 ? "#e07c24" : "#e94560" }}>{sellThrough.toFixed(1)}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        marginTop: 24, padding: "16px 0", borderTop: "1px solid rgba(255,255,255,0.05)",
+        fontSize: 10, color: "#444", display: "flex", justifyContent: "space-between",
+      }}>
+        <span>데이터 출처: FIT 기간 판매 분석</span>
+        <span>넬슨스포츠 대시보드 v1.0</span>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(SalesDashboard), document.getElementById("root"));
+</script>
+</body>
+</html>
