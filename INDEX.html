@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>넬슨스포츠 판매 현황 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;background:linear-gradient(135deg,#0a0a12,#12121f 50%,#0d0d1a);color:#e8e8f0;min-height:100vh}
+.wrap{max-width:920px;margin:0 auto;padding:24px 20px}
+h1{font-size:22px;font-weight:800;background:linear-gradient(90deg,#fff,#a0a0c0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.badge{font-size:11px;color:#666;font-weight:500;background:rgba(255,255,255,.05);padding:3px 10px;border-radius:20px;margin-left:12px}
+.subtitle{font-size:12px;color:#555;margin-top:4px}
+.filters{display:flex;gap:6px;margin:20px 0;flex-wrap:wrap}
+.fbtn{padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#888;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.fbtn.on{border-color:rgba(233,69,96,.6);background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(233,69,96,.05));color:#e94560}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px 14px;position:relative;overflow:hidden}
+.kpi .bar{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:12px 0 0 12px}
+.kpi .label{font-size:10px;color:#666;font-weight:600;letter-spacing:.5px;margin-bottom:6px}
+.kpi .val{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.kpi .sub{font-size:10px;color:#555;margin-top:4px}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{padding:7px 18px;border-radius:8px;border:none;background:transparent;color:#666;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.tab.on{background:rgba(233,69,96,.15);color:#e94560}
+.card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:20px 16px;margin-bottom:20px}
+.card-title{font-size:13px;font-weight:700;color:#ccc;margin-bottom:14px}
+.chart-wrap{position:relative;width:100%;max-width:100%}
+.legend-row{display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#777}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead tr{border-bottom:1px solid rgba(255,255,255,.08)}
+th{padding:8px 10px;color:#666;font-weight:600;font-size:10px;white-space:nowrap}
+.al{text-align:left}.ar{text-align:right}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;transition:background .15s}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+tbody tr.sel{background:rgba(233,69,96,.08)}
+td{padding:10px}
+.type-tag{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:600}
+.detail-panel{background:linear-gradient(135deg,rgba(233,69,96,.05),rgba(233,69,96,.01));border:1px solid rgba(233,69,96,.15);border-radius:14px;padding:20px;margin-bottom:20px;display:none}
+.detail-panel.show{display:block}
+.detail-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.detail-name{font-size:15px;font-weight:800;color:#fff}
+.detail-sub{font-size:11px;color:#888;margin-top:2px}
+.close-btn{background:rgba(255,255,255,.06);border:none;border-radius:8px;color:#888;padding:4px 12px;cursor:pointer;font-size:11px;font-family:inherit}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.metric{background:rgba(0,0,0,.2);border-radius:10px;padding:12px;text-align:center}
+.metric .ml{font-size:9px;color:#666;margin-bottom:4px;font-weight:600}
+.metric .mv{font-size:16px;font-weight:800}
+.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.brand-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.brand-name{font-size:11px;color:#ccc;width:80px;flex-shrink:0}
+.brand-bar-bg{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.brand-bar-fill{height:100%;border-radius:3px}
+.brand-val{font-size:10px;color:#888;width:60px;text-align:right;flex-shrink:0}
+.brand-pct{font-size:10px;color:#555;width:40px;text-align:right;flex-shrink:0}
+.footer{margin-top:24px;padding:16px 0;border-top:1px solid rgba(255,255,255,.05);font-size:10px;color:#444;display:flex;justify-content:space-between}
+.inv-bar-bg{width:60px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle}
+.inv-bar-fill{height:100%;border-radius:2px}
+@media(max-width:640px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .metric-grid{grid-template-columns:repeat(3,1fr)}
+  h1{font-size:18px}
+  .kpi .val{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:baseline">
+      <h1>판매 현황 대시보드</h1>
+      <span class="badge">FIT 기간분석</span>
+    </div>
+    <p class="subtitle">넬슨스포츠 · 매장 관리자용</p>
+  </div>
+
+  <!-- Channel Filter -->
+  <div class="filters" id="channelFilters"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- View Tabs -->
+  <div class="tabs" id="viewTabs"></div>
+
+  <!-- Chart Card -->
+  <div class="card">
+    <div class="card-title" id="chartTitle">매장별 판매액 · 매출이익</div>
+    <div class="chart-wrap" id="chartWrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <div class="legend-row" id="legendRow"></div>
+    <div id="tableWrap" style="display:none"></div>
+  </div>
+
+  <!-- Store Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-name" id="detailName"></div>
+        <div class="detail-sub" id="detailSub"></div>
+      </div>
+      <button class="close-btn" onclick="selectStore(null)">닫기</button>
+    </div>
+    <div class="metric-grid" id="detailMetrics"></div>
+    <div id="detailBrands"></div>
+  </div>
+
+  <!-- Store Ranking Table -->
+  <div class="card" style="padding:16px 0">
+    <div class="card-title" style="padding-left:16px">매장 순위</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th class="al">#</th><th class="al">매장명</th><th class="al">유형</th>
+          <th class="ar">판매액</th><th class="ar">수량</th><th class="ar">이익률</th><th class="ar">소진율</th>
+        </tr></thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>데이터 출처: FIT 기간 판매 분석</span>
+    <span>넬슨스포츠 대시보드 v1.0</span>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───
+const STORES=[
+{name:"넬슨온라인",type:"온라인비즈",channel:"5.이커머스",sales:87910072,qty:424,profit:80797890,stock:0,planned:422},
+{name:"더기어샵 북한산성",type:"직영점",channel:"1.직영점",sales:35399411,qty:153,profit:32921244,stock:10368,planned:10521},
+{name:"더기어샵 일산점",type:"직영점",channel:"1.직영점",sales:23906229,qty:100,profit:23480866,stock:6563,planned:6663},
+{name:"더기어샵 성수",type:"직영점",channel:"1.직영점",sales:17874086,qty:97,profit:15907633,stock:8523,planned:8620},
+{name:"코토팍시 더현대서울",type:"백화점",channel:"3.백화점",sales:14092318,qty:229,profit:8838546,stock:3123,planned:3352},
+{name:"더기어샵 대구",type:"백화점",channel:"3.백화점",sales:11222726,qty:39,profit:10294590,stock:3973,planned:4012},
+{name:"더기어샵 광주수완",type:"아울렛",channel:"4.아울렛",sales:11020227,qty:45,profit:10379227,stock:7385,planned:7430},
+{name:"더기어샵 청량리",type:"백화점",channel:"3.백화점",sales:9881819,qty:35,profit:9881819,stock:4026,planned:4061},
+{name:"코토팍시 롯데잠실",type:"백화점",channel:"3.백화점",sales:8879908,qty:166,profit:5647999,stock:3127,planned:3293},
+{name:"네이버스카르파",type:"온라인비즈",channel:"5.이커머스",sales:2631003,qty:15,profit:1136003,stock:0,planned:15},
+{name:"더기어샵 김해",type:"아울렛",channel:"4.아울렛",sales:1333090,qty:13,profit:344317,stock:3761,planned:3774},
+{name:"더기어샵 기흥",type:"아울렛",channel:"4.아울렛",sales:1192001,qty:9,profit:401183,stock:5703,planned:5712},
+{name:"무신사온라인",type:"온라인비즈",channel:"5.이커머스",sales:950046,qty:6,profit:546410,stock:0,planned:6},
+{name:"네이버 코토팍시",type:"온라인비즈",channel:"5.이커머스",sales:861820,qty:6,profit:561184,stock:0,planned:6},
+{name:"스카르파 부산본점",type:"백화점",channel:"3.백화점",sales:677954,qty:3,profit:347863,stock:1698,planned:1701},
+];
+
+const BRANDS=[
+{name:"아크테릭스",sales:192649507,profit:181631570,qty:685,stock:44654,planned:21574},
+{name:"코토팍시",sales:26688273,profit:16895684,qty:408,stock:16458,planned:16200},
+{name:"스카르파",sales:4679138,profit:2127866,qty:22,stock:3905,planned:7269},
+{name:"블랙다이아몬드",sales:3354064,profit:781337,qty:34,stock:6684,planned:7226},
+{name:"매드락",sales:720635,profit:325698,qty:23,stock:1305,planned:1328},
+{name:"빅아그네스",sales:487001,profit:98819,qty:6,stock:1391,planned:1411},
+{name:"더기어샵",sales:163727,profit:61727,qty:5,stock:2696,planned:2905},
+{name:"카르마",sales:89091,profit:52045,qty:1,stock:181,planned:209},
+];
+
+const CROSS={
+"넬슨온라인":[{b:"아크테릭스",s:85369190},{b:"블랙다이아몬드",s:1301609},{b:"빅아그네스",s:434637},{b:"스카르파",s:412818},{b:"코토팍시",s:166136}],
+"더기어샵 북한산성":[{b:"아크테릭스",s:35399411}],
+"더기어샵 일산점":[{b:"아크테릭스",s:23787047},{b:"더기어샵",s:119182}],
+"더기어샵 성수":[{b:"아크테릭스",s:16016587},{b:"코토팍시",s:1247591},{b:"스카르파",s:425454},{b:"카르마",s:89091}],
+"코토팍시 더현대서울":[{b:"코토팍시",s:14092318}],
+"더기어샵 대구":[{b:"아크테릭스",s:11222726}],
+"더기어샵 광주수완":[{b:"아크테릭스",s:10207500},{b:"더기어샵",s:812727}],
+"더기어샵 청량리":[{b:"아크테릭스",s:9881819}],
+"코토팍시 롯데잠실":[{b:"코토팍시",s:8879908}],
+};
+
+const BC={"아크테릭스":"#6366f1","코토팍시":"#e94560","스카르파":"#0ea5e9","블랙다이아몬드":"#a855f7","매드락":"#f59e0b","빅아그네스":"#14b8a6","더기어샵":"#3b82f6","카르마":"#84cc16"};
+const TC={"직영점":"#6366f1","온라인비즈":"#e94560","백화점":"#0ea5e9","아울렛":"#f59e0b"};
+
+// ─── HELPERS ───
+const fmt=n=>{if(Math.abs(n)>=1e8)return(n/1e8).toFixed(1)+"억";if(Math.abs(n)>=1e4)return(n/1e4).toFixed(0)+"만";return n.toLocaleString()};
+const fmtW=n=>n.toLocaleString()+"원";
+const pct=(a,b)=>b?((a/b)*100).toFixed(1):"0.0";
+const marginColor=v=>v>80?"#82b74b":v>50?"#f59e0b":"#e94560";
+const sellColor=v=>v>50?"#82b74b":v>10?"#f59e0b":"#e94560";
+
+// ─── STATE ───
+let channelFilter="전체", currentView="sales", selectedStore=null, mainChart=null;
+
+// ─── FILTER ───
+function getFiltered(){
+  if(channelFilter==="전체")return STORES;
+  return STORES.filter(s=>s.type===channelFilter);
+}
+
+// ─── RENDER FUNCTIONS ───
+function renderFilters(){
+  const el=document.getElementById("channelFilters");
+  el.innerHTML="";
+  ["전체","직영점","온라인비즈","백화점","아울렛"].forEach(ch=>{
+    const btn=document.createElement("button");
+    btn.className="fbtn"+(channelFilter===ch?" on":"");
+    btn.textContent=ch;
+    btn.onclick=()=>{channelFilter=ch;selectedStore=null;render()};
+    el.appendChild(btn);
+  });
+}
+
+function renderKPI(){
+  const stores=getFiltered();
+  const t={sales:0,qty:0,profit:0,stock:0};
+  stores.forEach(s=>{t.sales+=s.sales;t.qty+=s.qty;t.profit+=s.profit;t.stock+=s.stock});
+  const items=[
+    {label:"총 판매액",value:fmt(t.sales),sub:"VAT 제외",accent:"#e94560"},
+    {label:"판매 수량",value:t.qty.toLocaleString()+"개",sub:stores.length+"개 매장",accent:"#3b82f6"},
+    {label:"매출이익",value:fmt(t.profit),sub:"이익률 "+pct(t.profit,t.sales)+"%",accent:"#82b74b"},
+    {label:"잔여 재고",value:fmt(t.stock),sub:"현재 기준",accent:"#f59e0b"},
+  ];
+  const el=document.getElementById("kpiGrid");
+  el.innerHTML=items.map(k=>`
+    <div class="kpi">
+      <div class="bar" style="background:${k.accent}"></div>
+      <div class="label">${k.label}</div>
+      <div class="val">${k.value}</div>
+      <div class="sub">${k.sub}</div>
+    </div>`).join("");
+}
+
+function renderTabs(){
+  const el=document.getElementById("viewTabs");
+  el.innerHTML="";
+  [{key:"sales",label:"매장별 판매"},{key:"brand",label:"브랜드 비중"},{key:"inventory",label:"재고/소진율"}].forEach(v=>{
+    const btn=document.createElement("button");
+    btn.className="tab"+(currentView===v.key?" on":"");
+    btn.textContent=v.label;
+    btn.onclick=()=>{currentView=v.key;render()};
+    el.appendChild(btn);
+  });
+}
+
+function renderChart(){
+  const canvas=document.getElementById("mainChart");
+  const tableWrap=document.getElementById("tableWrap");
+  const legendRow=document.getElementById("legendRow");
+  const titleEl=document.getElementById("chartTitle");
+
+  if(mainChart){mainChart.destroy();mainChart=null}
+  canvas.style.display="none";
+  tableWrap.style.display="none";
+  tableWrap.innerHTML="";
+  legendRow.innerHTML="";
+
+  if(currentView==="sales"){
+    canvas.style.display="block";
+    titleEl.textContent="매장별 판매액 · 매출이익";
+    const stores=getFiltered();
+    const labels=stores.map(s=>s.name.length>8?s.name.slice(0,7)+"…":s.name);
+    const bgColors=stores.map(s=>s.name===selectedStore?"#e94560":(TC[s.type]||"#444"));
+    const profitColors=stores.map(s=>{const c=TC[s.type]||"#444";return c+"55"});
+
+    mainChart=new Chart(canvas,{
+      type:"bar",
+      data:{
+        labels,
+        datasets:[
+          {label:"판매액",data:stores.map(s=>s.sales),backgroundColor:bgColors,borderRadius:4,barPercentage:.7},
+          {label:"이익",data:stores.map(s=>s.profit),backgroundColor:profitColors,borderRadius:4,barPercentage:.7},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        onClick:(e,elements)=>{if(elements.length){const idx=elements[0].index;selectStore(getFiltered()[idx].name)}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:"rgba(20,20,30,0.95)",titleColor:"#fff",bodyColor:"#e0e0e0",
+            borderColor:"rgba(255,255,255,0.1)",borderWidth:1,cornerRadius:8,padding:12,
+            callbacks:{label:ctx=>ctx.dataset.label+": "+fmtW(ctx.raw)}
+          }
+        },
+        scales:{
+          x:{ticks:{color:"#666",font:{size:9},maxRotation:45,minRotation:25},grid:{display:false},border:{color:"rgba(255,255,255,0.06)"}},
+          y:{ticks:{color:"#555",font:{size:9},callback:v=>fmt(v)},grid:{color:"rgba(255,255,255,0.04)"},border:{display:false}}
+        }
+      }
+    });
+    canvas.parentElement.style.height="280px";
+
+    legendRow.innerHTML=Object.entries(TC).map(([k,v])=>`<div class="legend-item"><div class="legend-dot" style="background:${v}"></div>${k}</div>`).join("");
+  }
+  else if(currentView==="brand"){
+    canvas.style.display="block";
+    titleEl.textContent="브랜드별 매출 비중";
+    const data=BRANDS.filter(b=>b.sales>0);
+
+    mainChart=new Chart(canvas,{
+      type:"doughnut",
+      data:{
+        labels:data.map(b=>b.name),
+        datasets:[{data:data.map(b=>b.sales),backgroundColor:data.map(b=>BC[b.name]||"#666"),borderWidth:0,hoverOffset:8}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,cutout:"55%",
+        plugins:{
+          legend:{position:"bottom",labels:{color:"#888",font:{size:10},usePointStyle:true,pointStyle:"circle",padding:14}},
+          tooltip:{
+            backgroundColor:"rgba(20,20,30,0.95)",titleColor:"#fff",bodyColor:"#e0e0e0",
+            borderColor:"rgba(255,255,255,0.1)",borderWidth:1,cornerRadius:8,padding:12,
+            callbacks:{label:ctx=>{const total=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+": "+fmtW(ctx.raw)+" ("+((ctx.raw/total)*100).toFixed(1)+"%)"}}
+          }
+        }
+      }
+    });
+    canvas.parentElement.style.height="320px";
+  }
+  else if(currentView==="inventory"){
+    canvas.style.display="none";
+    tableWrap.style.display="block";
+    titleEl.textContent="브랜드별 재고 현황 · 소진율";
+
+    let html=`<table><thead><tr>
+      <th class="al">브랜드</th><th class="ar">기획수량</th><th class="ar">판매수량</th><th class="ar">재고수량</th><th class="ar">소진율</th>
+    </tr></thead><tbody>`;
+    BRANDS.forEach(b=>{
+      const st=b.planned>0?(b.qty/b.planned*100):0;
+      const col=sellColor(st);
+      html+=`<tr>
+        <td style="display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:50%;background:${BC[b.name]||"#666"}"></div><span style="font-weight:600">${b.name}</span></td>
+        <td class="ar" style="color:#888">${b.planned.toLocaleString()}</td>
+        <td class="ar" style="color:#ccc;font-weight:600">${b.qty.toLocaleString()}</td>
+        <td class="ar" style="color:#888">${b.stock.toLocaleString()}</td>
+        <td class="ar"><div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+          <div class="inv-bar-bg"><div class="inv-bar-fill" style="width:${Math.min(st,100)}%;background:${col}"></div></div>
+          <span style="font-weight:700;font-size:11px;min-width:40px;text-align:right;color:${col}">${st.toFixed(1)}%</span>
+        </div></td>
+      </tr>`;
+    });
+    html+=`</tbody></table>`;
+    tableWrap.innerHTML=html;
+  }
+}
+
+function selectStore(name){
+  selectedStore=name===selectedStore?null:name;
+  render();
+}
+
+function renderDetail(){
+  const panel=document.getElementById("detailPanel");
+  if(!selectedStore){panel.classList.remove("show");return}
+  const s=STORES.find(x=>x.name===selectedStore);
+  if(!s){panel.classList.remove("show");return}
+  panel.classList.add("show");
+
+  document.getElementById("detailName").textContent=s.name;
+  document.getElementById("detailSub").textContent=s.type+" · "+s.channel;
+
+  const margin=pct(s.profit,s.sales);
+  const sell=pct(s.qty,s.planned);
+  document.getElementById("detailMetrics").innerHTML=[
+    {label:"판매액",value:fmtW(s.sales),color:"#e94560"},
+    {label:"이익률",value:margin+"%",color:"#82b74b"},
+    {label:"소진율",value:sell+"%",color:"#3b82f6"},
+  ].map(m=>`<div class="metric"><div class="ml">${m.label}</div><div class="mv" style="color:${m.color}">${m.value}</div></div>`).join("");
+
+  const brands=CROSS[selectedStore]||[];
+  if(brands.length){
+    document.getElementById("detailBrands").innerHTML=
+      `<div style="font-size:11px;font-weight:700;color:#888;margin-bottom:8px">브랜드별 매출 구성</div>`+
+      brands.map(b=>{
+        const ratio=s.sales>0?(b.s/s.sales*100):0;
+        return `<div class="brand-row">
+          <div class="brand-dot" style="background:${BC[b.b]||"#666"}"></div>
+          <span class="brand-name">${b.b}</span>
+          <div class="brand-bar-bg"><div class="brand-bar-fill" style="width:${ratio}%;background:${BC[b.b]||"#666"}"></div></div>
+          <span class="brand-val">${fmt(b.s)}</span>
+          <span class="brand-pct">${ratio.toFixed(1)}%</span>
+        </div>`;
+      }).join("");
+  }else{
+    document.getElementById("detailBrands").innerHTML="";
+  }
+}
+
+function renderRanking(){
+  const stores=getFiltered();
+  const body=document.getElementById("rankBody");
+  body.innerHTML=stores.map((s,i)=>{
+    const margin=s.sales>0?(s.profit/s.sales*100):0;
+    const sell=s.planned>0?(s.qty/s.planned*100):0;
+    const isSel=s.name===selectedStore;
+    return `<tr class="${isSel?"sel":""}" onclick="selectStore('${s.name.replace(/'/g,"\\'")}')">
+      <td style="color:#555;font-weight:700;width:30px">${i+1}</td>
+      <td style="font-weight:700;color:${isSel?"#e94560":"#ddd"}">${s.name}</td>
+      <td><span class="type-tag" style="background:${(TC[s.type]||"#444")}22;color:${TC[s.type]||"#888"}">${s.type}</span></td>
+      <td class="ar" style="font-weight:700;color:#ccc">${fmt(s.sales)}</td>
+      <td class="ar" style="color:#888">${s.qty}</td>
+      <td class="ar" style="font-weight:600;color:${marginColor(margin)}">${margin.toFixed(1)}%</td>
+      <td class="ar" style="font-weight:600;color:${sellColor(sell)}">${sell.toFixed(1)}%</td>
+    </tr>`;
+  }).join("");
+}
+
+function render(){
+  renderFilters();
+  renderKPI();
+  renderTabs();
+  renderChart();
+  renderDetail();
+  renderRanking();
+}
+
+render();
+</script>
+</body>
+</html>
