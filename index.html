@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nelson News Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EB;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #888;
+    --border: rgba(0,0,0,0.08);
+    --fashion: #E8322E;
+    --outdoor: #2D6A4F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Instrument Sans', 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); }
+  a { color: inherit; text-decoration: none; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+  .header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #FFFDF8 0%, var(--bg) 100%);
+  }
+  .header-inner { max-width: 1200px; margin: 0 auto; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .live-badge {
+    display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    background: var(--text); color: var(--bg); padding: 3px 8px; border-radius: 3px;
+    vertical-align: middle; margin-left: 10px;
+  }
+  .subtitle { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .last-updated { font-size: 11px; color: #999; }
+  .refresh-btn {
+    border: 1.5px solid var(--text); background: transparent; padding: 8px 18px;
+    border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.04em; transition: all 0.2s; font-family: inherit;
+  }
+  .refresh-btn:hover { background: var(--text); color: var(--bg); }
+
+  .stats { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+  .stat-card {
+    display: flex; align-items: center; gap: 10px; background: var(--card);
+    padding: 10px 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .stat-num {
+    width: 36px; height: 36px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #fff;
+  }
+  .stat-label { font-size: 12px; font-weight: 600; color: #666; }
+
+  .toolbar {
+    max-width: 1200px; margin: 0 auto; padding: 20px 40px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .pills { display: flex; gap: 6px; }
+  .pill {
+    padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; user-select: none; border: 1px solid #ddd;
+    background: var(--card); color: #555; font-family: inherit;
+  }
+  .pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .pill:hover { opacity: 0.85; }
+  .source-select {
+    padding: 7px 12px; border-radius: 8px; font-size: 12px;
+    border: 1px solid #ddd; background: var(--card); color: #333;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .search-input {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid #ddd;
+    font-size: 12px; width: 200px; background: var(--card); font-weight: 500;
+    font-family: inherit;
+  }
+  .view-toggles { margin-left: auto; display: flex; gap: 4px; }
+  .view-btn {
+    padding: 6px 10px; border-radius: 6px; font-size: 16px; cursor: pointer;
+    border: 1px solid #ddd; background: var(--card); color: #999;
+    transition: all 0.2s; font-family: inherit; line-height: 1;
+  }
+  .view-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .main { max-width: 1200px; margin: 0 auto; padding: 0 40px 60px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+  }
+  .card {
+    background: var(--card); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); transition: all 0.25s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+  .card-img { height: 170px; overflow: hidden; background: #eee; }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-body { padding: 18px 20px 20px; flex: 1; display: flex; flex-direction: column; }
+  .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .card-source { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 4px; }
+  .card-cat { font-size: 10px; font-weight: 600; opacity: 0.7; }
+  .card-lang { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 3px; background: #f0f0f0; color: #999; }
+  .card-title {
+    font-size: 15px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-desc {
+    font-size: 12px; color: #777; line-height: 1.6; margin-bottom: 12px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-time { font-size: 11px; color: #aaa; font-weight: 500; }
+
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .list-item {
+    background: var(--card); border-radius: 10px; padding: 16px 20px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.03); display: flex;
+    align-items: center; gap: 16px; transition: all 0.25s;
+  }
+  .list-item:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .list-bar { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+  .list-content { flex: 1; min-width: 0; }
+  .list-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .list-source { font-size: 10px; font-weight: 700; }
+  .list-time { font-size: 10px; color: #aaa; font-weight: 500; }
+  .list-title {
+    font-size: 14px; font-weight: 600; line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .list-cat {
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+    padding: 4px 10px; border-radius: 12px;
+  }
+
+  .spinner { display: flex; justify-content: center; padding: 80px 0; }
+  .spinner-ring {
+    width: 32px; height: 32px; border: 3px solid #e0e0e0;
+    border-top: 3px solid var(--text); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .empty { text-align: center; padding: 80px 0; color: #999; font-size: 14px; }
+
+  .feed-status { max-width:1200px; margin:0 auto; padding:0 40px 12px; }
+  .feed-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .feed-chip {
+    font-size:10px; padding:4px 10px; border-radius:12px; font-weight:600;
+    display:flex; align-items:center; gap:5px;
+  }
+  .feed-chip .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .feed-chip .dot.ok { background:#22c55e; }
+  .feed-chip .dot.fail { background:#ef4444; }
+  .feed-chip .dot.loading { background:#f59e0b; animation: pulse 1s infinite; }
+
+  @media (max-width: 640px) {
+    .header { padding: 20px 16px 16px; }
+    .toolbar { padding: 16px; }
+    .main { padding: 0 16px 40px; }
+    .logo { font-size: 22px; }
+    .grid { grid-template-columns: 1fr; }
+    .search-input { width: 100%; }
+    .feed-status { padding: 0 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <div><span class="logo">Nelson News Board</span><span class="live-badge">LIVE</span></div>
+        <p class="subtitle">패션 & 아웃도어 업계 뉴스 피드 — KR / EN</p>
+      </div>
+      <div class="header-actions">
+        <span class="last-updated" id="lastUpdated"></span>
+        <button class="refresh-btn" onclick="fetchFeeds()">↻ 새로고침</button>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="pills" id="categoryPills"></div>
+  <div class="pills" id="langPills"></div>
+  <select class="source-select" id="sourceSelect" onchange="render()">
+    <option value="All">모든 소스</option>
+  </select>
+  <input class="search-input" id="searchInput" placeholder="기사 검색..." oninput="render()">
+  <div class="view-toggles">
+    <button class="view-btn active" data-mode="grid" onclick="setView('grid')">⊞</button>
+    <button class="view-btn" data-mode="list" onclick="setView('list')">☰</button>
+  </div>
+</div>
+
+<div class="feed-status" id="feedStatus"></div>
+
+<main class="main" id="main">
+  <div class="spinner"><div class="spinner-ring"></div></div>
+</main>
+
+<script>
+const FEEDS = [
+  // ── 한국어 소스 ──
+  { name: "구글뉴스 패션",       url: "https://news.google.com/rss/search?q=%ED%8C%A8%EC%85%98+%EB%B8%8C%EB%9E%9C%EB%93%9C&hl=ko&gl=KR&ceid=KR:ko",  category: "Fashion", color: "#E8322E", lang: "KR" },
+  { name: "구글뉴스 아웃도어",   url: "https://news.google.com/rss/search?q=%EC%95%84%EC%9B%83%EB%8F%84%EC%96%B4+%EC%BA%A0%ED%95%91&hl=ko&gl=KR&ceid=KR:ko", category: "Outdoor", color: "#2D6A4F", lang: "KR" },
+  { name: "구글뉴스 스트리트웨어", url: "https://news.google.com/rss/search?q=%EC%8A%A4%ED%8A%B8%EB%A6%BF%EC%9B%A8%EC%96%B4+%EC%8A%A4%EB%8B%88%EC%BB%A4%EC%A6%88&hl=ko&gl=KR&ceid=KR:ko", category: "Fashion", color: "#7C3AED", lang: "KR" },
+  { name: "구글뉴스 등산/트레킹", url: "https://news.google.com/rss/search?q=%EB%93%B1%EC%82%B0+%ED%8A%B8%EB%A0%88%ED%82%B9+%EC%9E%A5%EB%B9%84&hl=ko&gl=KR&ceid=KR:ko", category: "Outdoor", color: "#4A7C59", lang: "KR" },
+  { name: "한국섬유신문",         url: "https://www.ktnews.com/rss/allArticle.xml",   category: "Fashion", color: "#1A1A1A", lang: "KR" },
+  { name: "어패럴뉴스",           url: "https://www.apparelnews.co.kr/rss/allArticle.xml", category: "Fashion", color: "#C45BAA", lang: "KR" },
+  { name: "뉴스와이어 패션",      url: "https://api.newswire.co.kr/rss/industry/701",  category: "Fashion", color: "#2563EB", lang: "KR" },
+  { name: "뉴스와이어 스포츠레저", url: "https://api.newswire.co.kr/rss/industry/1301", category: "Outdoor", color: "#0D9488", lang: "KR" },
+
+  // ── 영어 소스 ──
+  { name: "Hypebeast",           url: "https://hypebeast.com/feed",                    category: "Fashion", color: "#FF5A00", lang: "EN" },
+  { name: "Highsnobiety",        url: "https://www.highsnobiety.com/rss/",             category: "Fashion", color: "#000000", lang: "EN" },
+  { name: "GearJunkie",          url: "https://gearjunkie.com/feed",                   category: "Outdoor", color: "#1B7340", lang: "EN" },
+  { name: "Switchback Travel",   url: "https://www.switchbacktravel.com/feed",          category: "Outdoor", color: "#3B6F4A", lang: "EN" },
+  { name: "Fashionista",         url: "https://fashionista.com/.rss/full/",             category: "Fashion", color: "#D946A8", lang: "EN" },
+  { name: "BOF",                 url: "https://www.businessoffashion.com/rss",          category: "Fashion", color: "#111111", lang: "EN" },
+];
+
+const PROXIES = [
+  (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  (u) => "https://corsproxy.io/?" + encodeURIComponent(u),
+  (u) => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u),
+];
+
+async function fetchWithProxy(url) {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (r.ok) { const t = await r.text(); if (t.includes("<")) return t; }
+  } catch {}
+  for (const proxy of PROXIES) {
+    try {
+      const r = await fetch(proxy(url), { signal: AbortSignal.timeout(8000) });
+      if (r.ok) { const t = await r.text(); if (t.includes("<")) return t; }
+    } catch {}
+  }
+  throw new Error("All proxies failed");
+}
+
+function parseRSS(xml, source) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, "text/xml");
+  const entries = [];
+  doc.querySelectorAll("item").forEach((item, i) => {
+    if (i >= 12) return;
+    const title = item.querySelector("title")?.textContent?.trim() || "";
+    if (!title) return;
+    const link = item.querySelector("link")?.textContent?.trim() || "";
+    const pubDate = item.querySelector("pubDate")?.textContent || "";
+    const desc = item.querySelector("description")?.textContent || "";
+    const cleaned = desc.replace(/<[^>]*>/g, "").replace(/&[^;]+;/g, " ").trim().slice(0, 220);
+    const mc = item.getElementsByTagNameNS("http://search.yahoo.com/mrss/", "content");
+    const mediaUrl = mc?.[0]?.getAttribute("url") || "";
+    const enclosure = item.querySelector("enclosure")?.getAttribute("url") || "";
+    const imgMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/);
+    const image = mediaUrl || enclosure || (imgMatch ? imgMatch[1] : "");
+    entries.push({
+      title, link, description: cleaned, image,
+      pubDate: pubDate ? new Date(pubDate) : new Date(),
+      source: source.name, category: source.category, color: source.color, lang: source.lang,
+    });
+  });
+  if (!entries.length) {
+    doc.querySelectorAll("entry").forEach((entry, i) => {
+      if (i >= 12) return;
+      const title = entry.querySelector("title")?.textContent?.trim() || "";
+      if (!title) return;
+      const link = entry.querySelector("link")?.getAttribute("href") || "";
+      const updated = entry.querySelector("updated")?.textContent || entry.querySelector("published")?.textContent || "";
+      const summary = entry.querySelector("summary")?.textContent || entry.querySelector("content")?.textContent || "";
+      const cleaned = summary.replace(/<[^>]*>/g, "").replace(/&[^;]+;/g, " ").trim().slice(0, 220);
+      entries.push({
+        title, link, description: cleaned, image: "",
+        pubDate: updated ? new Date(updated) : new Date(),
+        source: source.name, category: source.category, color: source.color, lang: source.lang,
+      });
+    });
+  }
+  return entries;
+}
+
+function timeAgo(date) {
+  const s = (Date.now() - date.getTime()) / 1000;
+  if (isNaN(s) || s < 0) return "방금 전";
+  if (s < 3600) return Math.floor(s / 60) + "분 전";
+  if (s < 86400) return Math.floor(s / 3600) + "시간 전";
+  if (s < 604800) return Math.floor(s / 86400) + "일 전";
+  return date.toLocaleDateString("ko-KR");
+}
+
+function esc(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+let articles = [];
+let filter = "All";
+let langFilter = "All";
+let viewMode = "grid";
+let feedStatuses = {};
+
+function renderFeedStatus() {
+  document.getElementById("feedStatus").innerHTML = '<div class="feed-chips">' + FEEDS.map(f => {
+    const st = feedStatuses[f.name] || "loading";
+    return `<div class="feed-chip" style="background:${f.color}0D;color:${f.color}"><span class="dot ${st}"></span>${f.name}</div>`;
+  }).join("") + '</div>';
+}
+
+async function fetchFeeds() {
+  document.getElementById("main").innerHTML = '<div class="spinner"><div class="spinner-ring"></div></div>';
+  articles = [];
+  feedStatuses = {};
+  FEEDS.forEach(f => feedStatuses[f.name] = "loading");
+  renderFeedStatus();
+
+  await Promise.allSettled(FEEDS.map(async feed => {
+    try {
+      const xml = await fetchWithProxy(feed.url);
+      const parsed = parseRSS(xml, feed);
+      if (parsed.length === 0) throw new Error("No items");
+      articles.push(...parsed);
+      feedStatuses[feed.name] = "ok";
+    } catch {
+      feedStatuses[feed.name] = "fail";
+    }
+    renderFeedStatus();
+  }));
+
+  articles.sort((a, b) => b.pubDate - a.pubDate);
+  document.getElementById("lastUpdated").textContent = "최근 갱신: " + new Date().toLocaleTimeString("ko-KR");
+
+  const sel = document.getElementById("sourceSelect");
+  const sources = [...new Set(articles.map(a => a.source))];
+  sel.innerHTML = '<option value="All">모든 소스</option>' + sources.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  render();
+}
+
+function setFilter(f) { filter = f; render(); }
+function setLang(l) { langFilter = l; render(); }
+function setView(m) {
+  viewMode = m;
+  document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === m));
+  render();
+}
+
+function render() {
+  const sourceFilter = document.getElementById("sourceSelect").value;
+  const query = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = articles.filter(a => {
+    if (filter !== "All" && a.category !== filter) return false;
+    if (langFilter !== "All" && a.lang !== langFilter) return false;
+    if (sourceFilter !== "All" && a.source !== sourceFilter) return false;
+    if (query && !a.title.toLowerCase().includes(query) && !a.description.toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  document.getElementById("categoryPills").innerHTML =
+    [["All","전체"],["Fashion","패션"],["Outdoor","아웃도어"]].map(([v,l]) =>
+      `<button class="pill${filter===v?" active":""}" onclick="setFilter('${v}')">${l}</button>`
+    ).join("");
+
+  document.getElementById("langPills").innerHTML =
+    [["All","KR+EN"],["KR","한국어"],["EN","English"]].map(([v,l]) =>
+      `<button class="pill${langFilter===v?" active":""}" onclick="setLang('${v}')">${l}</button>`
+    ).join("");
+
+  const st = [
+    { label:"전체", val: filtered.length, bg:"#1a1a1a" },
+    { label:"패션", val: filtered.filter(a=>a.category==="Fashion").length, bg:"#E8322E" },
+    { label:"아웃도어", val: filtered.filter(a=>a.category==="Outdoor").length, bg:"#2D6A4F" },
+    { label:"KR", val: filtered.filter(a=>a.lang==="KR").length, bg:"#2563EB" },
+    { label:"EN", val: filtered.filter(a=>a.lang==="EN").length, bg:"#7C3AED" },
+  ];
+  document.getElementById("stats").innerHTML = st.map(s => `
+    <div class="stat-card">
+      <div class="stat-num" style="background:${s.bg}">${s.val}</div>
+      <span class="stat-label">${s.label}</span>
+    </div>
+  `).join("");
+
+  const main = document.getElementById("main");
+  if (!filtered.length) { main.innerHTML = '<div class="empty">표시할 기사가 없습니다</div>'; return; }
+
+  if (viewMode === "grid") {
+    main.innerHTML = '<div class="grid">' + filtered.map((a, i) => `
+      <a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" class="card" style="animation:fadeUp .4s ease ${Math.min(i*.04,.5)}s both">
+        ${a.image ? `<div class="card-img"><img src="${esc(a.image)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ""}
+        <div class="card-body">
+          <div class="card-meta">
+            <span class="card-source" style="color:${a.color};background:${a.color}12">${esc(a.source)}</span>
+            <span class="card-cat" style="color:${a.category==="Fashion"?"var(--fashion)":"var(--outdoor)"}">${a.category==="Fashion"?"패션":"아웃도어"}</span>
+            <span class="card-lang">${a.lang}</span>
+          </div>
+          <h3 class="card-title">${esc(a.title)}</h3>
+          <p class="card-desc">${esc(a.description)}</p>
+          <span class="card-time">${timeAgo(a.pubDate)}</span>
+        </div>
+      </a>
+    `).join("") + '</div>';
+  } else {
+    main.innerHTML = '<div class="list">' + filtered.map((a, i) => `
+      <a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" class="list-item" style="animation:fadeUp .3s ease ${Math.min(i*.03,.4)}s both">
+        <div class="list-bar" style="background:${a.color}"></div>
+        <div class="list-content">
+          <div class="list-meta">
+            <span class="list-source" style="color:${a.color}">${esc(a.source)}</span>
+            <span style="font-size:10px;color:#aaa">·</span>
+            <span class="list-time">${timeAgo(a.pubDate)}</span>
+            <span style="font-size:9px;color:#bbb;background:#f5f5f5;padding:1px 5px;border-radius:3px">${a.lang}</span>
+          </div>
+          <h3 class="list-title">${esc(a.title)}</h3>
+        </div>
+        <span class="list-cat" style="color:${a.category==="Fashion"?"var(--fashion)":"var(--outdoor)"};background:${a.category==="Fashion"?"#E8322E12":"#2D6A4F12"}">${a.category==="Fashion"?"패션":"아웃도어"}</span>
+      </a>
+    `).join("") + '</div>';
+  }
+}
+
+fetchFeeds();
+</script>
+</body>
+</html>
